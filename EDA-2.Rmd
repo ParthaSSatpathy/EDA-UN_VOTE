@@ -1,0 +1,157 @@
+---
+title: "Exploratory Data Analysis of The UN Vote"
+author: "Partha S Satpathy"
+date: "March 23, 2017"
+output: html_document
+---
+
+##Set up the libraries
+```{r setup, include=TRUE}
+library(ggplot2)
+library(dplyr)
+library(countrycode)
+```
+
+```{r read}
+##Read the data from github
+x <- read.delim("https://github.com/datasciencelabs/data/raw/master/rawvotingdata13.tab")
+
+##To view the data frame in a better format and save it as votes
+votes <- tbl_df(x)
+```
+
+```{r use dplyr}
+##Pipe Operator- x %>% f(,y) tells you to pass the variable before the operator to the fuction f(x,y)
+##It helps you chain a series of command together
+
+##Deplyr verbs
+##Filter() -> subsets the observation
+##mutate() -> adds a new variable or modifies existing one
+
+votes %>% filter(vote <= 3)
+votes %>% mutate(year=session+1945)
+
+##Combine the above 2 functions using pipe
+votes %>%
+  filter(vote <= 3) %>%
+  mutate(year=session+1945)
+
+# Convert country code 100
+countrycode(100,"cown","country.name")
+
+# Add a country column within the mutate: votes_processed
+votes_processed <- votes %>%
+  filter(vote <= 3) %>%
+  mutate(year = session + 1945,country=countrycode(ccode,"cown","country.name"))
+
+##summrize() turns many rows into one
+votes_processed %>% summarize(total=n()) ##show the no of rowa
+
+votes_processed %>%
+  summarize(total=n(),percent_yes = mean(vote == 1))
+##The above will fist compare if vote==1, it will consider true as 1 and false as 0,
+##It will then calculate the mean. So finally it will give the percentages of yes
+
+##summarize considers the whole group, but if we want to summarize at sub group levels
+##we will use group_by
+##Below code is to see no of votes and percentage of Yes for every year
+##We will group the data set in years before summarizing
+votes_processed %>%
+  group_by(year) %>%
+  summarize(total=n(),percent_yes = mean(vote == 1))
+
+# Summarize by country: by_country
+by_country <-
+  votes_processed %>%
+  group_by(country) %>%
+  summarize(total = n(),
+            percent_yes = mean(vote == 1))
+
+##arrange() sorts a table based on a variable
+by_country %>% 
+  arrange(percent_yes)
+
+# Now sort in descending order
+by_country %>%
+  arrange(desc(percent_yes))
+
+# Filter out countries with fewer than 100 votes
+by_country %>%
+  filter(total>100) %>%
+  arrange(percent_yes)
+
+```
+
+## Analysis using ggplots
+
+```{r Visualizing by Year, echo=TRUE}
+#########Visualizing by Year######################
+by_year <- votes_processed %>% 
+  group_by(year) %>% 
+  summarize(total=n(),
+            percent_yes=mean(vote==1))
+##ggplot has 3 important parts to it
+ggplot(by_year, #1. Data Set
+       aes(x = year, y = percent_yes)) + #2. X and Y axis
+       geom_line() #3. Layer - (type of) graph on the XY-plane
+
+# Change to scatter plot and add smoothing curve
+ggplot(by_year, aes(year, percent_yes)) +
+  geom_point() +
+  geom_smooth()
+
+#########Visualizing by Year and Country######################
+
+##Select the yearly data only for USA
+by_year_country_USA <-
+  votes_processed %>%
+  group_by(year,country) %>% ##Here grou by on both year and country
+  summarize(total=n(),percent_yes=mean(vote==1)) %>%
+  filter(country == "United States of America")
+
+##Select the yearly data only for USA and France
+by_year_country_USA_France <-
+  votes_processed %>%
+  group_by(year,country) %>% ##Here grou by on both year and country
+  summarize(total=n(),percent_yes=mean(vote==1)) %>%
+  filter(country %in% c("United States of America","France")) ##Check the %in% for multiple selection
+
+##Compare the US and Farnce data over the years
+##For this we can distinguish between the two countries using color aesthetic
+ggplot(by_year_country_USA_France,
+       aes(x=year,y=percent_yes,color=country)) + geom_line()
+       
+# Start with by_year_country dataset
+by_year_country <- votes_processed %>%
+  group_by(year, country) %>%
+  summarize(total = n(),
+            percent_yes = mean(vote == 1))
+
+# Print by_year_country
+by_year_country
+
+# Create a filtered version: UK_by_year
+UK_by_year <-
+  by_year_country %>%
+  filter(country=="United Kingdom of Great Britain and Northern Ireland")
+
+# Line plot of percent_yes over time for UK only
+ggplot(UK_by_year, aes(year,percent_yes)) + geom_line()
+
+# Vector of four countries to examine
+countries <- c("United States of America",
+               "United Kingdom of Great Britain and Northern Ireland",
+               "France", "India")
+
+# Filter by_year_country: filterebd_4_countries
+filtered_4_countries <-
+  by_year_country %>%
+  filter(country %in% countries)
+
+# Line plot of % yes in four countries
+ggplot(filtered_4_countries, aes(year,percent_yes,color=country))+geom_line()
+
+
+```
+
+
