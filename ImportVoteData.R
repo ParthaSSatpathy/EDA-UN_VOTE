@@ -12,3 +12,10 @@ head(votes,10)
 
 ##View the structuure of the data
 str(votes)
+
+##UN Resolutions desc
+desc <- read.csv("C:/Users/parth/Desktop/RProjects/EDA-UN_VOTE/desc.csv", stringsAsFactors=FALSE)
+
+descriptions <- tbl_df(desc)
+colnames(descriptions)[1] <- "rcid"
+

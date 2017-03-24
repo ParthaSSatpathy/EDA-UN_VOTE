@@ -67,3 +67,24 @@ filtered_4_countries <-
 
 # Line plot of % yes in four countries
 ggplot(filtered_4_countries, aes(year,percent_yes,color=country))+geom_line()
+
+############Faceting##################
+##Plotting all the countries in a single graph is not that intuitive
+##So we can plot the graphs individually
+##This can be acheived using faceting
+
+# Vector of four countries to examine
+countries <- c("United States of America",
+               "United Kingdom of Great Britain and Northern Ireland",
+               "France", "Japan", "Brazil", "India","Afghanistan","Algeria","Germany")
+
+# Filter by_year_country: filterebd_4_countries
+filtered_4_countries <-
+  by_year_country %>%
+  filter(country %in% countries)
+ggplot(filtered_4_countries,
+       aes(year,percent_yes)) + geom_line() + facet_wrap(~country)
+##But in the above case the Y-axis is standardized
+## To make the Y-axis independent, we will use scales parameter of facet
+ggplot(filtered_4_countries,
+       aes(year,percent_yes)) + geom_line() + facet_wrap(~country, scales = "free_y")
